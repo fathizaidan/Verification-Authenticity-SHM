@@ -3,6 +3,10 @@ pragma solidity ^0.8.20;
 
 contract SHMRegistry {
 
+    // ================================
+    // STRUCT
+    // ================================
+
     struct SHM {
         string certNumber;
         string cid;          // IPFS CID
@@ -16,9 +20,29 @@ contract SHMRegistry {
         uint256 createdAt;
     }
 
-    mapping(string => SHM) private shms;
+struct History {
+    string action;
+    address actor;
+    string owner;
+    string nik;
+    uint256 timestamp;
+}
 
-    // ========= EVENTS =========
+
+
+
+    // ================================
+    // STORAGE
+    // ================================
+
+    mapping(string => SHM) private shms;
+    mapping(string => History[]) private histories;
+
+    address public admin;
+
+    // ================================
+    // EVENTS
+    // ================================
 
     event SHMRegistered(
         string certNumber,
@@ -35,7 +59,58 @@ contract SHMRegistry {
         string newOwner
     );
 
-    // ========= REGISTER =========
+    event HistoryAdded(
+        string certNumber,
+        string action,
+        address actor,
+        uint256 timestamp
+    );
+
+    // ================================
+    // MODIFIER
+    // ================================
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin");
+        _;
+    }
+
+    // ================================
+    // CONSTRUCTOR
+    // ================================
+
+    constructor() {
+        admin = msg.sender;
+    }
+
+    // ================================
+    // INTERNAL HISTORY
+    // ================================
+
+function _addHistory(
+    string memory certNumber,
+    string memory action,
+    string memory owner,
+    string memory nik
+) internal {
+    histories[certNumber].push( 
+        History(
+            action,         // 0
+            msg.sender,    // 1
+            owner,         // 2
+            nik,           // 3
+            block.timestamp// 4
+        )
+    );
+}
+
+
+
+
+
+    // ================================
+    // REGISTER
+    // ================================
 
     function registerSHM(
         string memory certNumber,
@@ -59,27 +134,54 @@ contract SHMRegistry {
         );
 
         emit SHMRegistered(certNumber, documentHash, cid);
+        _addHistory(certNumber, "REGISTER", ownerName, ownerNIK);
+
     }
 
-    // ========= VERIFY =========
+    // ================================
+    // VERIFY
+    // ================================
 
-    function verifySHM(string memory certNumber) public {
+    function verifySHM(string memory certNumber) public onlyAdmin {
         require(shms[certNumber].createdAt != 0, "Not found");
+
         shms[certNumber].verified = true;
 
         emit SHMVerified(certNumber);
+_addHistory(
+    certNumber,
+    "VERIFY",
+    shms[certNumber].ownerName,
+    shms[certNumber].ownerNIK
+);
+
+
     }
 
-    // ========= REVOKE =========
+    // ================================
+    // REVOKE
+    // ================================
 
-    function revokeSHM(string memory certNumber) public {
+    function revokeSHM(string memory certNumber) public onlyAdmin {
         require(shms[certNumber].createdAt != 0, "Not found");
+
         shms[certNumber].revoked = true;
 
         emit SHMRevoked(certNumber);
+_addHistory(
+    certNumber,
+    "REVOKE",
+    shms[certNumber].ownerName,
+    shms[certNumber].ownerNIK
+);
+
+
+
     }
 
-    // ========= UPDATE OWNER =========
+    // ================================
+    // UPDATE OWNER
+    // ================================
 
     function updateOwner(
         string memory certNumber,
@@ -87,15 +189,22 @@ contract SHMRegistry {
         string memory newNIK
     ) public {
 
+        require(shms[certNumber].createdAt != 0, "Not found");
+
         string memory oldOwner = shms[certNumber].ownerName;
 
         shms[certNumber].ownerName = newOwner;
         shms[certNumber].ownerNIK = newNIK;
 
         emit OwnerUpdated(certNumber, oldOwner, newOwner);
+_addHistory(certNumber, "UPDATE_OWNER", newOwner, newNIK);
+
+
     }
 
-    // ========= READ =========
+    // ================================
+    // READ SHM
+    // ================================
 
     function getSHM(string memory certNumber)
         public
@@ -124,4 +233,37 @@ contract SHMRegistry {
             s.createdAt
         );
     }
+
+    // ================================
+    // READ HISTORY
+    // ================================
+    function getHistory(string memory certNumber)
+        public
+        view
+        returns (
+            string[] memory actions,
+            address[] memory actors,
+            string[] memory owners,
+            string[] memory niks,
+            uint256[] memory timestamps
+        )
+    {
+        History[] memory h = histories[certNumber];
+
+        actions = new string[](h.length);
+        actors = new address[](h.length);
+        owners = new string[](h.length);
+        niks = new string[](h.length);
+        timestamps = new uint256[](h.length);
+
+        for (uint i = 0; i < h.length; i++) {
+            actions[i] = h[i].action;
+            actors[i] = h[i].actor;
+            owners[i] = h[i].owner;
+            niks[i] = h[i].nik;
+            timestamps[i] = h[i].timestamp;
+        }
+    }
+
+
 }

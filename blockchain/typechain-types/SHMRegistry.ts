@@ -3,11 +3,13 @@
 /* eslint-disable */
 import type {
   BaseContract,
+  BigNumberish,
   BytesLike,
   FunctionFragment,
   Result,
   Interface,
   EventFragment,
+  AddressLike,
   ContractRunner,
   ContractMethod,
   Listener,
@@ -24,6 +26,8 @@ import type {
 export interface SHMRegistryInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "admin"
+      | "getHistory"
       | "getSHM"
       | "registerSHM"
       | "revokeSHM"
@@ -33,12 +37,15 @@ export interface SHMRegistryInterface extends Interface {
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "HistoryAdded"
       | "OwnerUpdated"
       | "SHMRegistered"
       | "SHMRevoked"
       | "SHMVerified"
   ): EventFragment;
 
+  encodeFunctionData(functionFragment: "admin", values?: undefined): string;
+  encodeFunctionData(functionFragment: "getHistory", values: [string]): string;
   encodeFunctionData(functionFragment: "getSHM", values: [string]): string;
   encodeFunctionData(
     functionFragment: "registerSHM",
@@ -51,6 +58,8 @@ export interface SHMRegistryInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "verifySHM", values: [string]): string;
 
+  decodeFunctionResult(functionFragment: "admin", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "getHistory", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getSHM", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "registerSHM",
@@ -62,6 +71,31 @@ export interface SHMRegistryInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "verifySHM", data: BytesLike): Result;
+}
+
+export namespace HistoryAddedEvent {
+  export type InputTuple = [
+    certNumber: string,
+    action: string,
+    actor: AddressLike,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    certNumber: string,
+    action: string,
+    actor: string,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    certNumber: string;
+    action: string;
+    actor: string;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace OwnerUpdatedEvent {
@@ -175,6 +209,22 @@ export interface SHMRegistry extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  admin: TypedContractMethod<[], [string], "view">;
+
+  getHistory: TypedContractMethod<
+    [certNumber: string],
+    [
+      [string[], string[], string[], string[], bigint[]] & {
+        actions: string[];
+        actors: string[];
+        owners: string[];
+        niks: string[];
+        timestamps: bigint[];
+      }
+    ],
+    "view"
+  >;
+
   getSHM: TypedContractMethod<
     [certNumber: string],
     [[string, string, string, string, string, boolean, boolean, bigint]],
@@ -207,6 +257,24 @@ export interface SHMRegistry extends BaseContract {
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "admin"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "getHistory"
+  ): TypedContractMethod<
+    [certNumber: string],
+    [
+      [string[], string[], string[], string[], bigint[]] & {
+        actions: string[];
+        actors: string[];
+        owners: string[];
+        niks: string[];
+        timestamps: bigint[];
+      }
+    ],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "getSHM"
   ): TypedContractMethod<
@@ -242,6 +310,13 @@ export interface SHMRegistry extends BaseContract {
   ): TypedContractMethod<[certNumber: string], [void], "nonpayable">;
 
   getEvent(
+    key: "HistoryAdded"
+  ): TypedContractEvent<
+    HistoryAddedEvent.InputTuple,
+    HistoryAddedEvent.OutputTuple,
+    HistoryAddedEvent.OutputObject
+  >;
+  getEvent(
     key: "OwnerUpdated"
   ): TypedContractEvent<
     OwnerUpdatedEvent.InputTuple,
@@ -271,6 +346,17 @@ export interface SHMRegistry extends BaseContract {
   >;
 
   filters: {
+    "HistoryAdded(string,string,address,uint256)": TypedContractEvent<
+      HistoryAddedEvent.InputTuple,
+      HistoryAddedEvent.OutputTuple,
+      HistoryAddedEvent.OutputObject
+    >;
+    HistoryAdded: TypedContractEvent<
+      HistoryAddedEvent.InputTuple,
+      HistoryAddedEvent.OutputTuple,
+      HistoryAddedEvent.OutputObject
+    >;
+
     "OwnerUpdated(string,string,string)": TypedContractEvent<
       OwnerUpdatedEvent.InputTuple,
       OwnerUpdatedEvent.OutputTuple,
