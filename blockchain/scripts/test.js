@@ -1,10 +1,9 @@
 import hre from "hardhat";
 const { ethers } = hre;
+import { CONTRACT_ADDRESS } from "./config.js";
 
 async function main() {
   const { ethers } = hre;
-
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
   const Certificate = await ethers.getContractFactory("Certificate");
   const certificate = Certificate.attach(contractAddress);

@@ -1,9 +1,8 @@
 import hre from "hardhat";
 const { ethers } = hre;
+import { CONTRACT_ADDRESS } from "./config.js";
 
 async function main() {
-  const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-
   const Factory = await ethers.getContractFactory("SHMRegistry");
   const contract = Factory.attach(CONTRACT_ADDRESS);
 

@@ -1,22 +1,30 @@
 import hre from "hardhat";
+import promptSync from "prompt-sync";
+import { CONTRACT_ADDRESS } from "./config.js";
+
+const prompt = promptSync();
 const { ethers } = hre;
 
 async function main() {
-  const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const cert = prompt("Cert Number : ");
+  const owner = prompt("New Owner Name : ");
+  const nik = prompt("New Owner NIK  : ");
 
-  // ISI LANGSUNG
-  const certNumber = "SHM001";
-  const newOwner = "Andi Saputra";
-  const newNIK = "99887766";
+  const signers = await ethers.getSigners();
 
-  const [signer] = await ethers.getSigners();
-  const Factory = await ethers.getContractFactory("SHMRegistry", signer);
+  // 🔐 ADMIN / BPN / NOTARIS
+  const adminSigner = signers[0];
+
+  const Factory = await ethers.getContractFactory("SHMRegistry", adminSigner);
+
   const contract = Factory.attach(CONTRACT_ADDRESS);
 
-  const tx = await contract.updateOwner(certNumber, newOwner, newNIK);
+  const tx = await contract.updateOwner(cert, owner, nik);
   await tx.wait();
 
-  console.log("OWNER UPDATED");
+  console.log("\nOWNER UPDATED");
+  console.log("Owner:", owner);
+  console.log("NIK  :", nik);
 }
 
 main().catch(console.error);

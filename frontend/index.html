@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SHM Registry Web UI</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.ethers.org/lib/ethers-5.2.umd.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>SHM Registry System</h1>
+      <button id="connectButton">Connect MetaMask</button>
+      <div id="accountInfo"></div>
+    </header>
+
+    <nav>
+      <button class="tab-button" onclick="showSection('register')">
+        Register SHM
+      </button>
+      <button class="tab-button" onclick="showSection('verify')">
+        Verify SHM
+      </button>
+      <button class="tab-button" onclick="showSection('revoke')">
+        Revoke SHM
+      </button>
+      <button class="tab-button" onclick="showSection('updateOwner')">
+        Update Owner
+      </button>
+      <button class="tab-button" onclick="showSection('viewSHM')">
+        View SHM
+      </button>
+      <button class="tab-button" onclick="showSection('viewHistory')">
+        View History
+      </button>
+      <button class="tab-button" onclick="showSection('setRole')">
+        Set Role
+      </button>
+    </nav>
+
+    <main>
+      <div id="register" class="section">
+        <h2>Register SHM</h2>
+        <form id="registerForm">
+          <input
+            type="text"
+            id="certNumber"
+            placeholder="Certificate Number"
+            required
+          />
+          <input type="text" id="cid" placeholder="IPFS CID" required />
+          <input
+            type="file"
+            id="documentFile"
+            accept=".pdf,.doc,.docx"
+            required
+          />
+          <input type="text" id="ownerName" placeholder="Owner Name" required />
+          <input type="text" id="ownerNIK" placeholder="Owner NIK" required />
+          <button type="submit">Register</button>
+        </form>
+      </div>
+
+      <div id="verify" class="section hidden">
+        <h2>Verify SHM</h2>
+        <form id="verifyForm">
+          <input
+            type="text"
+            id="verifyCertNumber"
+            placeholder="Certificate Number"
+            required
+          />
+          <button type="submit">Verify</button>
+        </form>
+      </div>
+
+      <div id="revoke" class="section hidden">
+        <h2>Revoke SHM</h2>
+        <form id="revokeForm">
+          <input
+            type="text"
+            id="revokeCertNumber"
+            placeholder="Certificate Number"
+            required
+          />
+          <button type="submit">Revoke</button>
+        </form>
+      </div>
+
+      <div id="updateOwner" class="section hidden">
+        <h2>Update Owner</h2>
+        <form id="updateOwnerForm">
+          <input
+            type="text"
+            id="updateCertNumber"
+            placeholder="Certificate Number"
+            required
+          />
+          <input
+            type="text"
+            id="newOwnerName"
+            placeholder="New Owner Name"
+            required
+          />
+          <input
+            type="text"
+            id="newOwnerNIK"
+            placeholder="New Owner NIK"
+            required
+          />
+          <button type="submit">Update</button>
+        </form>
+      </div>
+
+      <div id="viewSHM" class="section hidden">
+        <h2>View SHM</h2>
+        <form id="viewSHMForm">
+          <input
+            type="text"
+            id="viewCertNumber"
+            placeholder="Certificate Number"
+            required
+          />
+          <button type="submit">View</button>
+        </form>
+        <div id="shmDetails"></div>
+      </div>
+
+      <div id="viewHistory" class="section hidden">
+        <h2>View History</h2>
+        <form id="viewHistoryForm">
+          <input
+            type="text"
+            id="historyCertNumber"
+            placeholder="Certificate Number"
+            required
+          />
+          <button type="submit">View History</button>
+        </form>
+        <div id="historyDetails"></div>
+      </div>
+
+      <div id="setRole" class="section hidden">
+        <h2>Set Role</h2>
+        <form id="setRoleForm">
+          <input
+            type="text"
+            id="userAddress"
+            placeholder="User Address"
+            required
+          />
+          <select id="role" required>
+            <option value="0">USER</option>
+            <option value="1">ADMIN_BPN</option>
+          </select>
+          <button type="submit">Set Role</button>
+        </form>
+      </div>
+    </main>
+
+    <div id="results"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

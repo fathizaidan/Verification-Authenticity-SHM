@@ -28,8 +28,13 @@ struct History {
     uint256 timestamp;
 }
 
+    // ================================
+    // ROLES
+    // ================================
 
+enum Role { USER, ADMIN_BPN }
 
+mapping(address => Role) public roles;
 
     // ================================
     // STORAGE
@@ -70,18 +75,24 @@ struct History {
     // MODIFIER
     // ================================
 
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "Only admin");
-        _;
-    }
+modifier onlyAdmin() {
+    require(
+        roles[msg.sender] == Role.ADMIN_BPN,
+        "Only Admin/BPN"
+    );
+    _;
+}
+
 
     // ================================
     // CONSTRUCTOR
     // ================================
 
-    constructor() {
-        admin = msg.sender;
-    }
+constructor() {
+    admin = msg.sender;
+    roles[msg.sender] = Role.ADMIN_BPN;
+}
+
 
     // ================================
     // INTERNAL HISTORY
@@ -118,7 +129,7 @@ function _addHistory(
         bytes32 documentHash,
         string memory ownerName,
         string memory ownerNIK
-    ) public {
+    ) public onlyAdmin {
 
         require(shms[certNumber].createdAt == 0, "Already registered");
 
@@ -143,7 +154,9 @@ function _addHistory(
     // ================================
 
     function verifySHM(string memory certNumber) public onlyAdmin {
+
         require(shms[certNumber].createdAt != 0, "Not found");
+        require(!shms[certNumber].revoked, "SHM revoked");
 
         shms[certNumber].verified = true;
 
@@ -187,7 +200,7 @@ _addHistory(
         string memory certNumber,
         string memory newOwner,
         string memory newNIK
-    ) public {
+    ) public onlyAdmin {
 
         require(shms[certNumber].createdAt != 0, "Not found");
 
@@ -206,33 +219,31 @@ _addHistory(certNumber, "UPDATE_OWNER", newOwner, newNIK);
     // READ SHM
     // ================================
 
-    function getSHM(string memory certNumber)
-        public
-        view
-        returns (
-            string memory,
-            string memory,
-            bytes32,
-            string memory,
-            string memory,
-            bool,
-            bool,
-            uint256
-        )
-    {
-        SHM memory s = shms[certNumber];
+function getSHM(string memory cert)
+    public
+    view
+    returns (
+        string memory,
+        string memory,
+        bytes32,
+        string memory,
+        string memory,
+        bool
+    )
+{
+    SHM storage s = shms[cert];
+    require(bytes(s.certNumber).length != 0, "SHM not found");
 
-        return (
-            s.certNumber,
-            s.cid,
-            s.documentHash,
-            s.ownerName,
-            s.ownerNIK,
-            s.verified,
-            s.revoked,
-            s.createdAt
-        );
-    }
+    return (
+        s.certNumber,
+        s.cid,
+        s.documentHash,
+        s.ownerName,
+        s.ownerNIK,
+        s.verified
+    );
+}
+
 
     // ================================
     // READ HISTORY
@@ -263,6 +274,14 @@ _addHistory(certNumber, "UPDATE_OWNER", newOwner, newNIK);
             niks[i] = h[i].nik;
             timestamps[i] = h[i].timestamp;
         }
+    }
+
+    // ================================
+    // SET ROLE
+    // ================================
+
+    function setRole(address user, Role role) public onlyAdmin {
+        roles[user] = role;
     }
 
 

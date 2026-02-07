@@ -1,33 +1,58 @@
-import hre from "hardhat";
-import fs from "fs";
+const hre = require("hardhat");
+const fs = require("fs");
+const promptSync = require("prompt-sync");
+const { CONTRACT_ADDRESS } = require("./config.js");
 
+const prompt = promptSync();
 const { ethers } = hre;
 
 async function main() {
-  const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+  const CERT_NUMBER = prompt("Cert Number        : ");
+  const OWNER_NAME = prompt("Owner Name         : ");
+  const OWNER_NIK = prompt("Owner NIK          : ");
+  const CID = prompt("IPFS CID           : ");
 
-  const Factory = await ethers.getContractFactory("SHMRegistry");
+  console.log("\n--- Processing Registration ---");
+
+  const file = fs.readFileSync("./shm.pdf");
+  const documentHash = ethers.keccak256(file);
+
+  console.log("PDF Hash :", documentHash);
+
+  const signers = await ethers.getSigners();
+  const callerIndex = process.env.CALLER_INDEX ?? "0";
+  const signer = signers[Number(callerIndex)];
+
+  console.log("CALLER ADDRESS :", signer.address);
+
+  const Factory = await ethers.getContractFactory("SHMRegistry", signer);
   const contract = Factory.attach(CONTRACT_ADDRESS);
 
-  // Load file
-  const file = fs.readFileSync("./shm.pdf");
-
-  // Hash file → bytes32
-  const hash = ethers.keccak256(file);
-
-  console.log("Hash:", hash);
-
   const tx = await contract.registerSHM(
-    "SHM001", // certNumber
-    "bafyCID", // cid
-    hash, // bytes32
-    "Budi Santoso", // owner
-    "321xxx", // nik
+    CERT_NUMBER,
+    CID,
+    documentHash,
+    OWNER_NAME,
+    OWNER_NIK,
   );
 
+  console.log("⏳ Registering SHM...");
   await tx.wait();
 
-  console.log("REGISTERED");
+  console.log("\n✅ REGISTER SUCCESS");
+
+  const data = await contract.getSHM(CERT_NUMBER);
+
+  console.log("\nCHECK AFTER REGISTER:");
+  console.log("Cert     :", data[0]);
+  console.log("CID      :", data[1]);
+  console.log("Hash     :", data[2]);
+  console.log("Owner    :", data[3]);
+  console.log("NIK      :", data[4]);
+  console.log("Verified :", data[5]);
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
