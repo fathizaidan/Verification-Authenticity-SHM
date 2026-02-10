@@ -6,123 +6,72 @@ contract SHMRegistry {
     // ================================
     // STRUCT
     // ================================
-
     struct SHM {
         string certNumber;
-        string cid;          // IPFS CID
+        string cid;
         bytes32 documentHash;
-
         string ownerName;
         string ownerNIK;
-
         bool verified;
         bool revoked;
         uint256 createdAt;
     }
 
-struct History {
-    string action;
-    address actor;
-    string owner;
-    string nik;
-    uint256 timestamp;
-}
+    struct History {
+        string action;
+        address actor;
+        string owner;
+        string nik;
+        uint256 timestamp;
+    }
 
     // ================================
     // ROLES
     // ================================
-
-enum Role { USER, ADMIN_BPN }
-
-mapping(address => Role) public roles;
+    enum Role { USER, ADMIN_BPN }
+    mapping(address => Role) public roles;
 
     // ================================
     // STORAGE
     // ================================
-
     mapping(string => SHM) private shms;
     mapping(string => History[]) private histories;
 
     address public admin;
 
     // ================================
-    // EVENTS
-    // ================================
-
-    event SHMRegistered(
-        string certNumber,
-        bytes32 documentHash,
-        string cid
-    );
-
-    event SHMVerified(string certNumber);
-    event SHMRevoked(string certNumber);
-
-    event OwnerUpdated(
-        string certNumber,
-        string oldOwner,
-        string newOwner
-    );
-
-    event HistoryAdded(
-        string certNumber,
-        string action,
-        address actor,
-        uint256 timestamp
-    );
-
-    // ================================
     // MODIFIER
     // ================================
-
-modifier onlyAdmin() {
-    require(
-        roles[msg.sender] == Role.ADMIN_BPN,
-        "Only Admin/BPN"
-    );
-    _;
-}
-
+    modifier onlyAdmin() {
+        require(roles[msg.sender] == Role.ADMIN_BPN, "Only Admin/BPN");
+        _;
+    }
 
     // ================================
     // CONSTRUCTOR
     // ================================
-
-constructor() {
-    admin = msg.sender;
-    roles[msg.sender] = Role.ADMIN_BPN;
-}
-
+    constructor() {
+        admin = msg.sender;
+        roles[msg.sender] = Role.ADMIN_BPN;
+    }
 
     // ================================
     // INTERNAL HISTORY
     // ================================
-
-function _addHistory(
-    string memory certNumber,
-    string memory action,
-    string memory owner,
-    string memory nik
-) internal {
-    histories[certNumber].push( 
-        History(
-            action,         // 0
-            msg.sender,    // 1
-            owner,         // 2
-            nik,           // 3
-            block.timestamp// 4
-        )
-    );
-}
-
-
-
-
+    function _addHistory(
+        string memory certNumber,
+        string memory action,
+        string memory owner,
+        string memory nik
+    ) internal {
+        histories[certNumber].push(
+            History(action, msg.sender, owner, nik, block.timestamp)
+        );
+    }
 
     // ================================
     // REGISTER
     // ================================
-
     function registerSHM(
         string memory certNumber,
         string memory cid,
@@ -130,7 +79,6 @@ function _addHistory(
         string memory ownerName,
         string memory ownerNIK
     ) public onlyAdmin {
-
         require(shms[certNumber].createdAt == 0, "Already registered");
 
         shms[certNumber] = SHM(
@@ -144,106 +92,84 @@ function _addHistory(
             block.timestamp
         );
 
-        emit SHMRegistered(certNumber, documentHash, cid);
         _addHistory(certNumber, "REGISTER", ownerName, ownerNIK);
-
     }
 
     // ================================
     // VERIFY
     // ================================
-
     function verifySHM(string memory certNumber) public onlyAdmin {
+        SHM storage s = shms[certNumber];
+        require(s.createdAt != 0, "Not found");
+        require(!s.revoked, "SHM revoked");
 
-        require(shms[certNumber].createdAt != 0, "Not found");
-        require(!shms[certNumber].revoked, "SHM revoked");
-
-        shms[certNumber].verified = true;
-
-        emit SHMVerified(certNumber);
-_addHistory(
-    certNumber,
-    "VERIFY",
-    shms[certNumber].ownerName,
-    shms[certNumber].ownerNIK
-);
-
-
+        s.verified = true;
+        _addHistory(certNumber, "VERIFY", s.ownerName, s.ownerNIK);
     }
 
     // ================================
     // REVOKE
     // ================================
-
     function revokeSHM(string memory certNumber) public onlyAdmin {
-        require(shms[certNumber].createdAt != 0, "Not found");
+        SHM storage s = shms[certNumber];
+        require(s.createdAt != 0, "Not found");
+        require(!s.revoked, "Already revoked");
 
-        shms[certNumber].revoked = true;
-
-        emit SHMRevoked(certNumber);
-_addHistory(
-    certNumber,
-    "REVOKE",
-    shms[certNumber].ownerName,
-    shms[certNumber].ownerNIK
-);
-
-
-
+        s.revoked = true;
+        _addHistory(certNumber, "REVOKE", s.ownerName, s.ownerNIK);
     }
 
     // ================================
     // UPDATE OWNER
     // ================================
-
     function updateOwner(
         string memory certNumber,
         string memory newOwner,
         string memory newNIK
     ) public onlyAdmin {
+        SHM storage s = shms[certNumber];
+        require(s.createdAt != 0, "Not found");
+        require(!s.revoked, "SHM revoked");
 
-        require(shms[certNumber].createdAt != 0, "Not found");
+        s.ownerName = newOwner;
+        s.ownerNIK = newNIK;
 
-        string memory oldOwner = shms[certNumber].ownerName;
-
-        shms[certNumber].ownerName = newOwner;
-        shms[certNumber].ownerNIK = newNIK;
-
-        emit OwnerUpdated(certNumber, oldOwner, newOwner);
-_addHistory(certNumber, "UPDATE_OWNER", newOwner, newNIK);
-
-
+        _addHistory(certNumber, "UPDATE_OWNER", newOwner, newNIK);
     }
 
     // ================================
-    // READ SHM
+    // READ SHM (TIDAK REVERT)
     // ================================
+    function getSHM(string memory cert)
+        public
+        view
+        returns (
+            string memory,
+            string memory,
+            bytes32,
+            string memory,
+            string memory,
+            bool,
+            bool
+        )
+    {
+        SHM memory s = shms[cert];
 
-function getSHM(string memory cert)
-    public
-    view
-    returns (
-        string memory,
-        string memory,
-        bytes32,
-        string memory,
-        string memory,
-        bool
-    )
-{
-    SHM storage s = shms[cert];
-    require(bytes(s.certNumber).length != 0, "SHM not found");
+        // ❗ TIDAK REVERT, BIAR FRONTEND AMAN
+        if (bytes(s.certNumber).length == 0) {
+            return ("", "", bytes32(0), "", "", false, false);
+        }
 
-    return (
-        s.certNumber,
-        s.cid,
-        s.documentHash,
-        s.ownerName,
-        s.ownerNIK,
-        s.verified
-    );
-}
-
+        return (
+            s.certNumber,
+            s.cid,
+            s.documentHash,
+            s.ownerName,
+            s.ownerNIK,
+            s.verified,
+            s.revoked
+        );
+    }
 
     // ================================
     // READ HISTORY
@@ -279,10 +205,7 @@ function getSHM(string memory cert)
     // ================================
     // SET ROLE
     // ================================
-
     function setRole(address user, Role role) public onlyAdmin {
         roles[user] = role;
     }
-
-
 }

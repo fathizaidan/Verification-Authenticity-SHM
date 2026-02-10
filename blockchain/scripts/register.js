@@ -1,60 +1,69 @@
 import hre from "hardhat";
-import fs from "fs";
 import promptSync from "prompt-sync";
 import { CONTRACT_ADDRESS } from "./config.js";
 
-const { ethers } = hre;
 const prompt = promptSync({ sigint: true });
 
 async function main() {
-  console.log("=== REGISTRASI SHM ===\n");
+  const { ethers } = hre;
 
-  const cert = prompt("Cert Number  : ");
-  const owner = prompt("Owner Name   : ");
-  const nik = prompt("Owner NIK    : ");
-  const cid = prompt("IPFS CID     : ");
+  console.log("=== REGISTRASI SHM (GANACHE) ===\n");
 
-  if (!cert || !owner || !nik || !cid) {
+  const certNumber = prompt("Cert Number  : ");
+  const ownerName = prompt("Owner Name  : ");
+  const ownerNIK = prompt("Owner NIK   : ");
+  const cid = prompt("CID (IPFS)  : ");
+
+  if (!certNumber || !ownerName || !ownerNIK || !cid) {
     console.log("❌ Semua field wajib diisi");
     process.exit(1);
   }
 
-  if (nik.length !== 16) {
+  if (ownerNIK.length !== 16) {
     console.log("❌ NIK harus 16 digit");
     process.exit(1);
   }
 
-  // Hash dokumen
-  const file = fs.readFileSync("./shm.pdf");
-  const documentHash = ethers.keccak256(file);
+  try {
+    const [admin] = await ethers.getSigners();
+    console.log("👤 Admin:", admin.address);
 
-  console.log("\n📄 Document Hash:", documentHash);
+    const Factory = await ethers.getContractFactory("SHMRegistry", admin);
+    const contract = Factory.attach(CONTRACT_ADDRESS);
 
-  // Admin signer
-  const [admin] = await ethers.getSigners();
-  console.log("👤 Admin:", admin.address);
+    const documentHash = ethers.keccak256(ethers.toUtf8Bytes(certNumber));
 
-  const Contract = await ethers.getContractFactory("SHMRegistry", admin);
-  const contract = Contract.attach(CONTRACT_ADDRESS);
+    console.log("⏳ Mendaftarkan SHM...");
 
-  console.log("\n⏳ Mendaftarkan SHM...");
-  const tx = await contract.registerSHM(cert, cid, documentHash, owner, nik);
-  await tx.wait();
+    const tx = await contract.registerSHM(
+      certNumber,
+      cid,
+      documentHash,
+      ownerName,
+      ownerNIK
+    );
 
-  console.log("✅ REGISTER BERHASIL");
+    await tx.wait();
 
-  const data = await contract.getSHM(cert);
+    console.log("✅ SHM BERHASIL DIDAFTARKAN");
+  } catch (e) {
+    // =============================
+    // 🔒 ERROR HANDLING MANUSIAWI
+    // =============================
+    let message = "Registrasi SHM gagal";
 
-  console.log("\n📄 DATA SHM");
-  console.log("Cert     :", data[0]);
-  console.log("CID      :", data[1]);
-  console.log("Hash     :", data[2]);
-  console.log("Owner    :", data[3]);
-  console.log("NIK      :", data[4]);
-  console.log("Verified :", data[5] ? "YA" : "TIDAK");
+    if (e.reason) {
+      // dari require("...")
+      message = e.reason;
+    } else if (e.error?.reason) {
+      message = e.error.reason;
+    } else if (e.code === "CALL_EXCEPTION") {
+      message = "SHM sudah terdaftar atau sudah dicabut";
+    }
+
+    console.log("❌ GAGAL");
+    console.log(message);
+  }
 }
 
-main().catch((err) => {
-  console.error("❌ Error:", err);
-  process.exit(1);
-});
+main();
