@@ -1,122 +1,98 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Verifikasi SHM - Sistem Blockchain BPN</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
     <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo-section">
-                <div class="logo-placeholder">BPN</div>
-                <div>
-                    <h1>Sistem Verifikasi SHM</h1>
-                    <p class="subtitle">Berbasis Teknologi Blockchain</p>
-                </div>
+      <!-- HEADER -->
+      <header class="header">
+        <div class="logo-section">
+          <div class="logo-placeholder">BPN</div>
+          <div>
+            <h1>Sistem Verifikasi SHM</h1>
+            <p class="subtitle">Berbasis Teknologi Blockchain</p>
+          </div>
+        </div>
+        <a href="admin.html" class="admin-link">Admin Login →</a>
+      </header>
+
+      <!-- MAIN -->
+      <main class="main-content">
+        <!-- INFO -->
+        <div class="info-banner">
+          <div>
+            <strong>Verifikasi Keaslian Sertifikat Hak Milik</strong>
+            <p>Masukkan nomor sertifikat untuk memastikan keaslian data SHM.</p>
+          </div>
+        </div>
+
+        <!-- SEARCH -->
+        <div class="card search-card">
+          <h2>Cek Status SHM</h2>
+          <p class="card-description">
+            Masukkan nomor sertifikat yang tertera pada dokumen SHM
+          </p>
+
+          <div class="search-form">
+            <div class="input-group">
+              <label for="certNumber">Nomor Sertifikat</label>
+              <input
+                type="text"
+                id="certNumber"
+                placeholder="Contoh: SHM-2024-001"
+                autocomplete="off"
+              />
             </div>
-            <a href="admin.html" class="admin-link">Admin Login →</a>
-        </header>
+            <button id="searchBtn" class="btn btn-primary">
+              🔍 Verifikasi Sekarang
+            </button>
+          </div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Info Banner -->
-            <div class="info-banner">
-                <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                <div>
-                    <strong>Verifikasi Keaslian Sertifikat Hak Milik</strong>
-                    <p>Masukkan nomor sertifikat untuk memverifikasi keaslian dokumen SHM Anda</p>
-                </div>
-            </div>
+          <div id="loadingState" class="loading-state" style="display: none">
+            <div class="spinner"></div>
+            <p>Memverifikasi sertifikat di blockchain...</p>
+          </div>
+        </div>
 
-            <!-- Search Card -->
-            <div class="card search-card">
-                <h2>Cek Status SHM</h2>
-                <p class="card-description">Masukkan nomor sertifikat untuk verifikasi</p>
-                
-                <div class="search-form">
-                    <div class="input-group">
-                        <label for="certNumber">Nomor Sertifikat</label>
-                        <input 
-                            type="text" 
-                            id="certNumber" 
-                            placeholder="Contoh: SHM-2024-001"
-                            autocomplete="off"
-                        >
-                    </div>
-                    <button id="searchBtn" class="btn btn-primary">
-                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.35-4.35"></path>
-                        </svg>
-                        Verifikasi Sekarang
-                    </button>
-                </div>
+        <!-- RESULT -->
+        <div id="resultCard" class="card result-card" style="display: none">
+          <div class="result-header">
+            <h2>Hasil Verifikasi</h2>
+            <div id="statusBadge" class="status-badge"></div>
+          </div>
 
-                <!-- Loading State -->
-                <div id="loadingState" class="loading-state" style="display: none;">
-                    <div class="spinner"></div>
-                    <p>Memverifikasi sertifikat di blockchain...</p>
-                </div>
-            </div>
+          <div id="resultContent" class="result-content"></div>
 
-            <!-- Result Card -->
-            <div id="resultCard" class="card result-card" style="display: none;">
-                <div class="result-header">
-                    <h2>Hasil Verifikasi</h2>
-                    <div id="statusBadge" class="status-badge"></div>
-                </div>
+          <button id="clearBtn" class="btn btn-secondary">
+            Verifikasi Lainnya
+          </button>
+        </div>
 
-                <div id="resultContent" class="result-content">
-                    <!-- Content will be populated by JavaScript -->
-                </div>
+        <!-- ERROR -->
+        <div id="errorCard" class="card error-card" style="display: none">
+          <div class="error-icon">⚠️</div>
+          <h3>Verifikasi Gagal</h3>
+          <p id="errorMessage"></p>
+          <button id="clearErrorBtn" class="btn btn-secondary">
+            Coba Lagi
+          </button>
+        </div>
+      </main>
 
-                <button id="clearBtn" class="btn btn-secondary">Verifikasi Lainnya</button>
-            </div>
-
-            <!-- Error Card -->
-            <div id="errorCard" class="card error-card" style="display: none;">
-                <div class="error-icon">⚠️</div>
-                <h3>Sertifikat Tidak Ditemukan</h3>
-                <p id="errorMessage"></p>
-                <button id="clearErrorBtn" class="btn btn-secondary">Coba Lagi</button>
-            </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h4>Tentang Sistem</h4>
-                    <p>Sistem verifikasi SHM menggunakan teknologi blockchain Ethereum untuk menjamin keaslian dan transparansi data kepemilikan tanah.</p>
-                </div>
-                <div class="footer-section">
-                    <h4>Informasi</h4>
-                    <ul>
-                        <li>Kementerian Agraria dan Tata Ruang/BPN</li>
-                        <li>Sistem Blockchain Terdesentralisasi</li>
-                        <li>Data Terjamin & Transparan</li>
-                    </ul>
-                </div>
-                <div class="footer-section">
-                    <h4>Keamanan</h4>
-                    <p>🔒 Dilindungi oleh teknologi blockchain</p>
-                    <p>✓ Data tidak dapat dimanipulasi</p>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2024 BPN - Blockchain SHM Verification System</p>
-            </div>
-        </footer>
+      <!-- FOOTER -->
+      <footer class="footer">
+        <p>
+          © 2024 Badan Pertanahan Nasional (BPN) <br />
+          Sistem Verifikasi SHM Berbasis Blockchain
+        </p>
+      </footer>
     </div>
 
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <!-- USER SCRIPT (TANPA ETHERS) -->
     <script src="app-user.js"></script>
-</body>
+  </body>
 </html>
