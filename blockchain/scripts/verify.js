@@ -1,42 +1,40 @@
 import hre from "hardhat";
-const { ethers } = hre;
 import { CONTRACT_ADDRESS } from "./config.js";
+
+const { ethers } = hre;
 
 async function main() {
   const cert = process.argv[2];
 
   if (!cert) {
     console.log("Usage:");
-    console.log("npx hardhat run scripts/verify.js --network localhost SHM001");
-    return;
+    console.log(
+      "npx hardhat run scripts/verify.js --network localhost SHM-001"
+    );
+    process.exit(1);
   }
 
-  const [signer] = await ethers.getSigners();
+  const [admin] = await ethers.getSigners();
+  console.log("👤 Admin:", admin.address);
 
-  const Factory = await ethers.getContractFactory("SHMRegistry", signer);
-  const contract = Factory.attach(CONTRACT_ADDRESS);
+  const Contract = await ethers.getContractFactory("SHMRegistry", admin);
+  const contract = Contract.attach(CONTRACT_ADDRESS);
 
-  // 1️⃣ VERIFY
+  console.log(`⏳ Verifying SHM ${cert}...`);
   const tx = await contract.verifySHM(cert);
   await tx.wait();
 
-  const raw = await ethers.provider.call({
-    to: CONTRACT_ADDRESS,
-    data: contract.interface.encodeFunctionData("getSHM", [cert]),
-  });
-  console.log("RAW:", raw);
+  console.log("✅ SHM VERIFIED");
 
-  // 2️⃣ AMBIL DATA SETELAH VERIFY
   const data = await contract.getSHM(cert);
 
-  console.log("\nSHM VERIFIED");
-  console.log("Cert   :", data[0]);
-  console.log("CID    :", data[1]);
-  console.log("Hash   :", data[2]);
-  console.log("Owner  :", data[3]);
-  console.log("NIK    :", data[4]);
-  console.log("Verified:", data[5]);
-  console.log(process.argv);
+  console.log("\n📄 DATA SHM");
+  console.log("Cert     :", data[0]);
+  console.log("CID      :", data[1]);
+  console.log("Hash     :", data[2]);
+  console.log("Owner    :", data[3]);
+  console.log("NIK      :", data[4]);
+  console.log("Verified :", data[5] ? "YA" : "TIDAK");
 }
 
 main().catch(console.error);

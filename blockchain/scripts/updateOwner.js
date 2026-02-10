@@ -2,29 +2,43 @@ import hre from "hardhat";
 import promptSync from "prompt-sync";
 import { CONTRACT_ADDRESS } from "./config.js";
 
-const prompt = promptSync();
 const { ethers } = hre;
+const prompt = promptSync({ sigint: true });
 
 async function main() {
-  const cert = prompt("Cert Number : ");
-  const owner = prompt("New Owner Name : ");
-  const nik = prompt("New Owner NIK  : ");
+  console.log("=== UPDATE OWNER SHM ===\n");
 
-  const signers = await ethers.getSigners();
+  const cert = prompt("Cert Number      : ");
+  const owner = prompt("New Owner Name   : ");
+  const nik = prompt("New Owner NIK    : ");
 
-  // 🔐 ADMIN / BPN / NOTARIS
-  const adminSigner = signers[0];
+  if (!cert || !owner || !nik) {
+    console.log("❌ Semua field wajib diisi");
+    process.exit(1);
+  }
 
-  const Factory = await ethers.getContractFactory("SHMRegistry", adminSigner);
+  if (nik.length !== 16) {
+    console.log("❌ NIK harus 16 digit");
+    process.exit(1);
+  }
 
-  const contract = Factory.attach(CONTRACT_ADDRESS);
+  const [admin] = await ethers.getSigners();
+  console.log("👤 Admin:", admin.address);
 
+  const Contract = await ethers.getContractFactory("SHMRegistry", admin);
+  const contract = Contract.attach(CONTRACT_ADDRESS);
+
+  console.log("\n⏳ Mengupdate owner...");
   const tx = await contract.updateOwner(cert, owner, nik);
   await tx.wait();
 
-  console.log("\nOWNER UPDATED");
-  console.log("Owner:", owner);
-  console.log("NIK  :", nik);
+  console.log("✅ OWNER UPDATED");
+
+  const data = await contract.getSHM(cert);
+
+  console.log("\n📄 DATA TERKINI");
+  console.log("Owner :", data[3]);
+  console.log("NIK   :", data[4]);
 }
 
 main().catch(console.error);

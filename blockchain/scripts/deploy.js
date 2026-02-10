@@ -1,21 +1,19 @@
+import hre from "hardhat";
+const { ethers } = hre;
+
 async function main() {
-  console.log("Deploy script started");
+  console.log("🚀 Deploying SHMRegistry...\n");
 
-  const hre = await import("hardhat");
-  const { ethers } = hre.default;
+  const Contract = await ethers.getContractFactory("SHMRegistry");
+  const contract = await Contract.deploy();
 
-  const SHMRegistry = await ethers.getContractFactory("SHMRegistry");
+  await contract.waitForDeployment();
 
-  const shm = await SHMRegistry.deploy({});
-
-  await shm.waitForDeployment();
-
-  console.log("SHM deployed to:", await shm.getAddress());
+  console.log("✅ SHM deployed to:");
+  console.log(await contract.getAddress());
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+main().catch((err) => {
+  console.error("❌ Deploy error:", err);
+  process.exit(1);
+});

@@ -1,58 +1,60 @@
-const hre = require("hardhat");
-const fs = require("fs");
-const promptSync = require("prompt-sync");
-const { CONTRACT_ADDRESS } = require("./config.js");
+import hre from "hardhat";
+import fs from "fs";
+import promptSync from "prompt-sync";
+import { CONTRACT_ADDRESS } from "./config.js";
 
-const prompt = promptSync();
 const { ethers } = hre;
+const prompt = promptSync({ sigint: true });
 
 async function main() {
-  const CERT_NUMBER = prompt("Cert Number        : ");
-  const OWNER_NAME = prompt("Owner Name         : ");
-  const OWNER_NIK = prompt("Owner NIK          : ");
-  const CID = prompt("IPFS CID           : ");
+  console.log("=== REGISTRASI SHM ===\n");
 
-  console.log("\n--- Processing Registration ---");
+  const cert = prompt("Cert Number  : ");
+  const owner = prompt("Owner Name   : ");
+  const nik = prompt("Owner NIK    : ");
+  const cid = prompt("IPFS CID     : ");
 
+  if (!cert || !owner || !nik || !cid) {
+    console.log("❌ Semua field wajib diisi");
+    process.exit(1);
+  }
+
+  if (nik.length !== 16) {
+    console.log("❌ NIK harus 16 digit");
+    process.exit(1);
+  }
+
+  // Hash dokumen
   const file = fs.readFileSync("./shm.pdf");
   const documentHash = ethers.keccak256(file);
 
-  console.log("PDF Hash :", documentHash);
+  console.log("\n📄 Document Hash:", documentHash);
 
-  const signers = await ethers.getSigners();
-  const callerIndex = process.env.CALLER_INDEX ?? "0";
-  const signer = signers[Number(callerIndex)];
+  // Admin signer
+  const [admin] = await ethers.getSigners();
+  console.log("👤 Admin:", admin.address);
 
-  console.log("CALLER ADDRESS :", signer.address);
+  const Contract = await ethers.getContractFactory("SHMRegistry", admin);
+  const contract = Contract.attach(CONTRACT_ADDRESS);
 
-  const Factory = await ethers.getContractFactory("SHMRegistry", signer);
-  const contract = Factory.attach(CONTRACT_ADDRESS);
-
-  const tx = await contract.registerSHM(
-    CERT_NUMBER,
-    CID,
-    documentHash,
-    OWNER_NAME,
-    OWNER_NIK,
-  );
-
-  console.log("⏳ Registering SHM...");
+  console.log("\n⏳ Mendaftarkan SHM...");
+  const tx = await contract.registerSHM(cert, cid, documentHash, owner, nik);
   await tx.wait();
 
-  console.log("\n✅ REGISTER SUCCESS");
+  console.log("✅ REGISTER BERHASIL");
 
-  const data = await contract.getSHM(CERT_NUMBER);
+  const data = await contract.getSHM(cert);
 
-  console.log("\nCHECK AFTER REGISTER:");
+  console.log("\n📄 DATA SHM");
   console.log("Cert     :", data[0]);
   console.log("CID      :", data[1]);
   console.log("Hash     :", data[2]);
   console.log("Owner    :", data[3]);
   console.log("NIK      :", data[4]);
-  console.log("Verified :", data[5]);
+  console.log("Verified :", data[5] ? "YA" : "TIDAK");
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error("❌ Error:", err);
   process.exit(1);
 });

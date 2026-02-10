@@ -1,31 +1,35 @@
-const { task } = require("hardhat/config");
-const { CONTRACT_ADDRESS } = require("./config");
+import hre from "hardhat";
+import { CONTRACT_ADDRESS } from "./config.js";
 
-task("history", "Show SHM audit trail")
-  .addParam("cert", "Certificate number")
-  .setAction(async (args, hre) => {
-    const { ethers } = hre;
+const { ethers } = hre;
 
-    const Factory = await ethers.getContractFactory("SHMRegistry");
-    const contract = Factory.attach(CONTRACT_ADDRESS);
+async function main() {
+  const cert = process.argv[2];
 
-    const result = await contract.getHistory(args.cert);
+  if (!cert) {
+    console.log(
+      "Usage: npx hardhat run scripts/history.js --network localhost SHM-001"
+    );
+    process.exit(1);
+  }
 
-    const actions = result[0];
-    const actors = result[1];
-    const owners = result[2];
-    const niks = result[3];
-    const times = result[4];
+  const Contract = await ethers.getContractFactory("SHMRegistry");
+  const contract = Contract.attach(CONTRACT_ADDRESS);
 
-    console.log(`\n📜 HISTORY ${args.cert}\n`);
+  const [actions, actors, owners, niks, times] = await contract.getHistory(
+    cert
+  );
 
-    for (let i = 0; i < actions.length; i++) {
-      const date = new Date(Number(times[i]) * 1000);
-      console.log(`${i + 1}. ${actions[i]}`);
-      console.log(`   Owner : ${owners[i]}`);
-      console.log(`   NIK   : ${niks[i]}`);
-      console.log(`   By    : ${actors[i]}`);
-      console.log(`   At    : ${date.toLocaleString()}`);
-      console.log("");
-    }
-  });
+  console.log(`\n📜 RIWAYAT SHM ${cert}\n`);
+
+  for (let i = 0; i < actions.length; i++) {
+    const date = new Date(Number(times[i]) * 1000);
+    console.log(`${i + 1}. ${actions[i]}`);
+    console.log(`   Owner : ${owners[i]}`);
+    console.log(`   NIK   : ${niks[i]}`);
+    console.log(`   By    : ${actors[i]}`);
+    console.log(`   At    : ${date.toLocaleString()}\n`);
+  }
+}
+
+main().catch(console.error);
